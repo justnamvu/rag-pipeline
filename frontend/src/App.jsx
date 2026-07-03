@@ -16,7 +16,6 @@ function App() {
         <div className="px-4 py-4 border-b border-gray-200">
           <h1 className="text-sm font-medium text-gray-900">NodeRAG</h1>
         </div>
-
         <div className="flex-1 overflow-y-auto px-3 py-3">
           <UploadPanel onDocumentUploaded={handleDocumentUploaded} />
         </div>

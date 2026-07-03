@@ -17,8 +17,6 @@ export default function UploadPanel({ onDocumentUploaded }) {
     const inputRef = useRef(null)
 
     function updateDocument(filename, patch) {
-        // Merge patch into the matching document entry by filename
-        // Using a function update ensures we always read the latest state
         setDocuments(prev =>
             prev.map(doc => doc.filename === filename ? {...doc, ...patch} : doc)
         )
@@ -112,34 +110,53 @@ export default function UploadPanel({ onDocumentUploaded }) {
             {documents.length > 0 && (
                 <ul className="flex flex-col gap-1">
                     {documents.map(doc => (
-                        <li
-                            key={doc.filename}
-                            className="flex items-start justify-between gap-2
-                                        px-3 py-2 rounded-lg bg-gray-50 border
-                                        border-gray-200"
-                        >
-                            <div className="flex flex-col min-w-0">
-                                <span className="text-xs font-medium text-gray-800 truncate">
-                                    {doc.filename}
+                        doc.status === 'uploading' ? (
+                            <li key={doc.filename}>
+                                <SkeletonItem />
+                            </li>
+                        ) : (
+                            <li
+                                key={doc.filename}
+                                className="flex items-start justify-between gap-2
+                                            px-3 py-2 rounded-lg bg-gray-50 border
+                                            border-gray-200"
+                            >
+                                <div className="flex flex-col min-w-0">
+                                    <span className="text-xs font-medium text-gray-800 truncate">
+                                        {doc.filename}
+                                    </span>
+                                    {doc.chunkCount !== null && (
+                                        <span className="text-xs text-gray-400">
+                                            {doc.chunkCount} chunks
+                                        </span>
+                                    )}
+                                    {doc.error && (
+                                        <span className="text-xs text-red-400 truncate">
+                                            {doc.error}
+                                        </span>
+                                    )}
+                                </div>
+                                <span className={`text-xs shrink-0 mt-0.5 ${STATUS[doc.status].color}`}>
+                                    {STATUS[doc.status].label}
                                 </span>
-                                {doc.chunkCount !== null && (
-                                    <span className="text-xs text-gray-400">
-                                        {doc.chunkCount} chunks
-                                    </span>
-                                )}
-                                {doc.error && (
-                                    <span className="text-xs text-red-400 truncate">
-                                        {doc.error}
-                                    </span>
-                                )}
-                            </div>
-                            <span className={`text-xs shrink-0 mt-0.5 ${STATUS[doc.status].color}`}>
-                                {STATUS[doc.status].label}
-                            </span>
-                        </li>
+                            </li>
+                        )
                     ))}
                 </ul>
             )}
         </div> 
+    )
+}
+
+function SkeletonItem() {
+    return (
+        <div className="flex items-center justify-between px-3 py-2 rounded-lg
+                        border border-gray-100 bg-gray-50 animate-pulse">
+            <div className="flex flex-col gap-1.5 flex-1">
+                <div className="h-2.5 bg-gray-200 rounded w-3/4" />
+                <div className="h-2 bg-gray-100 rounded w-1/3" />
+            </div>
+            <div className="h-2 bg-gray-200 rounded w-10 ml-2" />
+        </div>
     )
 }

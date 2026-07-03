@@ -11,8 +11,8 @@ export default function ChatInterface({ hasDocuments }) {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
     }, [messages])
 
-    async function sendMessage() {
-        const query = input.trim()
+    async function sendMessage(overrideQuery) {
+        const query = overrideQuery || input.trim()
         if (!query || loading ) return
 
         setMessages(prev => [...prev, { role: 'user', content: query}])
@@ -39,7 +39,12 @@ export default function ChatInterface({ hasDocuments }) {
         } catch (err) {
             setMessages(prev => [
                 ...prev,
-                { role: 'assistant', content: null, error: err.message},
+                { 
+                    role: 'assistant', 
+                    content: null, 
+                    error: err.message,
+                    retryQuery: query,
+                },
             ])
         } finally {
             setLoading(false)
@@ -69,7 +74,16 @@ export default function ChatInterface({ hasDocuments }) {
                 ) : (
                     <div className="max-w-2xl mx-auto flex flex-col gap-6">
                         {messages.map((msg, i) => (
-                            <Message key={i} message={msg} />
+                            <Message 
+                                key={i} 
+                                message={msg}
+                                onRetry={query => {
+                                    setMessages(prev => prev.filter((_, idx) => idx !== i))
+                                    setInput(query)
+                                    setTimeout(() => sendMessage(query), 50)
+                                }}
+                            
+                            />
                         ))}
 
                         {/* Thinking indicator */}
@@ -91,7 +105,7 @@ export default function ChatInterface({ hasDocuments }) {
                     <div className={`flex items-center gap-2 border rounded-xl px-4 py-3
                         transition-colors ${loading
                             ? 'border-gray-200 bg-gray-50'
-                            : 'border-gray=300 focus-within:border-blue-400'
+                            : 'border-gray-300 focus-within:border-blue-400'
                         }`}
                     >
                         <input
@@ -105,13 +119,32 @@ export default function ChatInterface({ hasDocuments }) {
                                         bg-transparent disabled:cursor-not-allowed"
                         />
                         <button
-                            onClick={sendMessage}
+                            onClick={() => sendMessage()}
                             disabled={loading || !input.trim() || !hasDocuments}
-                            className="text-sm font-medium transition-colors
+                            className="min-w-[48px] flex items-center justify-center
+                                        text-sm font-medium transition-colors
                                         text-blue-500 hover:text-blue-600
                                         disabled:text-gray-300 disabled:cursor-not-allowed"
                         >
-                            Send
+                            {loading ? (
+                                <svg
+                                    className="animate-spin h-4 w-4 text-gray-400"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <circle
+                                        className="opacity-25"
+                                        cx="12" cy="12" r="10"
+                                        stroke="currentColor"
+                                        strokeWidth="4"
+                                    />
+                                    <path
+                                        className="opacity-75"
+                                        fill="currentColor"
+                                        d="M4 12a8 8 0 018-8v8z"
+                                    />
+                                </svg>
+                            ) : 'Send'}
                         </button>
                     </div>
                     <p className="text-xs text-gray-400 mt-2 text-center">
@@ -123,7 +156,7 @@ export default function ChatInterface({ hasDocuments }) {
     )
 }
 
-function Message({ message }) {
+function Message({ message, onRetry }) {
     const isUser = message.role === 'user'
     const [sourcesOpen, setSourcesOpen] = useState(false)
 
@@ -137,7 +170,18 @@ function Message({ message }) {
                 }`}
             >
                 {message.error ? (
-                    <p className="text-red-500">{message.error}</p>
+                    <div className="flex flex-col gap-2">
+                        <p className="text-red-500 text-sm">{message.error}</p>
+                        {message.retryQuery && (
+                            <button
+                                onClick={() => onRetry(message.retryQuery)}
+                                className="text-xs text-gray-400 hover:text-gray-600
+                                            underline underline-offset-2 self-start"
+                            >
+                                Retry
+                            </button>
+                        )}
+                    </div>
                 ) : isUser ? (
                     <p>{message.content}</p>
                 ) : (
@@ -153,7 +197,7 @@ function Message({ message }) {
                     <button
                         onClick={() => setSourcesOpen(prev => !prev)}
                         className="text-xs text-gray-400 hover:text-gray-600
-                                    transition-colors flex items=center gap-1"
+                                    transition-colors flex items-center gap-1"
                     >
                         <span>{sourcesOpen ? '↓' : '→'}</span>
                         {message.sources.length} source
