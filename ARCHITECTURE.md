@@ -111,63 +111,6 @@ The system prompt enforces strict grounding with five rules:
 | Empty chunks | Fallback without API call | Pass |
 | Empty query | 400 error raised | Pass |
 
-## Planned Communication Schema
-1. **Upload request (Client → API Gateway → Ingestion Service):**
-    ``` json
-    {
-        "filename": "report.pdf",
-        "content_type": "application/pdf",
-        "file": "<binary stream>"
-    }
-    ```
-2. **Ingestion Service → Vector Store (what gets stored per chunk):**
-    ``` json
-    {
-        "vector": [0.012, -0.834, 0.201, "...1536 dims"],
-        "metadata": {
-            "doc_id": "uuid-1234",
-            "filename": "report.pdf",
-            "page_number": 3,
-            "chunk_index": 7,
-            "chunk_text": "The quarterly revenue increased by..."
-        }
-    }
-    ```
-3. **Query request (Client → API Gateway → LLM Service):**
-    ``` json
-    {
-        "query": "What was the revenue in Q3?",
-        "top_k": 5,
-        "filters": {
-            "filename": "report.pdf"
-        }
-    }
-    ```
-4. **LLM Service → Vector Store (similarity search call):**
-    ``` json
-    {
-        "query_vector": [0.045, -0.712, 0.389, "...1536 dims"],
-        "top_k": 5,
-        "metadata_filter": {
-            "filename": "report.pdf"
-        }
-    }
-    ```
-5. **LLM Service → Client (final response):**
-    ```json
-    {
-        "answer": "Revenue in Q3 was $4.2M, a 12% increase year on year."
-        "sources": [
-            {
-                "filename": "report.pdf",
-                "page_number": 3,
-                "chunk_index": 7,
-                "chunk_text": "The quarterly revenue increased by..."
-            }
-        ]
-    }
-    ```
-
 ## Current API Contracts
 
 ### POST /api/v1/upload
@@ -217,4 +160,33 @@ Response:
 - Metadata stored alongside vector to enable filtered retrieval
 - LLM Service never receives raw documents - only pre-retrieved context
 - Query and chunk embeddings must come from the identical odel (text-embedding-3-small) - comparing vectors from different models would be meaningless
-- `temperature=0` is non-negotiable for a RAG system - any temperature > 0 introduces randomness that can cause the model to drift from the provided context
+- `temperature=0` is non-negotiable for a RAG system: any temperature > 0 introduces randomness that can cause the model to drift from the provided context
+
+## Frontend
+
+### Stack
+- Framework: React (Vite)
+- Styling: Tailwind CSS v4
+- Markdown rendering: react-markdown + @tailwindcss/typography
+
+### Structure
+frontend/src/
+- App.jsx - Two-pane shell, sidebar toggle, doc state
+- components/UploadPanel.jsx - Drag-and-drop upload, skelon, doc list
+- components/ChatInterface.jsx - Message list, input bar, sources, retry
+
+### Layout
+Two-panel layout matching ChatGPT/Claude conventions:
+- Left sidebar (w-72, collapsible) - document upload and list
+- Right main panel (flex-1) - chat interface with fixed bottom input bar
+
+### Key UI Decisions
+- Neutral gray/white palette - one accent color (blue-500) reserved for the Send button and active states only
+- User messages right-aligned (blue bubble), LLM messsages left-aligned (gray bubble)
+- Sources collapsible beneath each LLM message - filename, chunk index, similarity score, and 3-line text preview
+- Thinking dots during query loading, spinner on send button, skeleton shimmer during upload
+- Error bubbles include a Retry button that resends the original query
+- Sidebar slides closed via hamburger toggle for narrow viewports
+
+### CORS
+`CORSMiddleware` added to FastAPI allowing `http://localhost:5173`
