@@ -1,5 +1,5 @@
 import logging
-from app.services.opensearch_client import get_client
+from app.services.opensearch_client import get_opensearch_client
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ INDEX_MAPPING = {
 
 
 def create_index() -> None:
-    client = get_client()
+    client = get_opensearch_client()
     index_name = settings.opensearch_index_name
 
     if client.indices.exists(index=index_name):

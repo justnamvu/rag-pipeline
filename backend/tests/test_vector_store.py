@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from app.services.embedder import embed_chunks
 from app.services.vector_store import store_chunks
-from app.services.opensearch_client import get_client
+from app.services.opensearch_client import get_opensearch_client
 from app.core.config import settings
 
 
@@ -43,7 +43,7 @@ def test_verify_chunks_exist():
 
     time.sleep(1)
 
-    client = get_client()
+    client = get_opensearch_client()
     index_name = settings.opensearch_index_name
 
 
@@ -63,7 +63,7 @@ def test_count_documents():
     print("\n--- Test 3: Count documents in index ---")
 
     time.sleep(1)
-    client = get_client()
+    client = get_opensearch_client()
     index_name = settings.opensearch_index_name
 
     response = client.count(index=index_name)

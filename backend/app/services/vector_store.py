@@ -1,7 +1,7 @@
 import logging
 from typing import List
 from fastapi import HTTPException
-from app.services.opensearch_client import get_client
+from app.services.opensearch_client import get_opensearch_client
 from app.services.embedder import embed_single
 from app.core.config import settings
 
@@ -12,7 +12,7 @@ def store_chunks(chunks: List[dict]) -> int:
     if not chunks:
         return 0
 
-    client = get_client()
+    client = get_opensearch_client()
     index_name = settings.opensearch_index_name
     stored_count = 0
 
@@ -54,7 +54,7 @@ def search_chunks(query: str, top_k: int = 5) -> List[dict]:
     if not query.strip():
         return []
 
-    client = get_client()
+    client = get_opensearch_client()
     index_name = settings.opensearch_index_name
 
     query_vector = embed_single(query)
