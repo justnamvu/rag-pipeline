@@ -4,7 +4,6 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 
 from app.api.routes import upload, query
 from app.services.index_manager import create_index
@@ -32,6 +31,7 @@ app.include_router(query.router, prefix="/api/v1", tags=["query"])
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
 
 FRONTEND_DIST = Path(__file__).parent.parent / "frontend" / "dist"
 

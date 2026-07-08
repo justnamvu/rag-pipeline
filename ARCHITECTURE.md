@@ -190,3 +190,32 @@ Two-panel layout matching ChatGPT/Claude conventions:
 
 ### CORS
 `CORSMiddleware` added to FastAPI allowing `http://localhost:5173`
+
+## Deployment
+
+### Container
+- Base image: `python:3.11-slim`
+- Build: three-stage Dockerfile (frontend-builder, backend-builder, runtime)
+- Frontend served via FastAPI `StaticFiles` at `/`
+- API routes mounted before static files to avoid interception
+
+### Kubernetes manifests (`k8s/`)
+| File | Purpose |
+| :-: | :-: |
+| `configmap.yaml` | Non-sensitive environment variables |
+| `secret.yaml` | API keys (gitignored, use secret.example.yaml as template) |
+| `opensearch-deployment.yaml` | OpenSearch pod + internal Service |
+| `deployment.yaml` | NodeRAG pod with probes and resource limits |
+| `service.yaml` | Internal cluster endpoint for NodeRAG |
+| `route.yaml` | Public HTTPS URL via OpenShift edge TLS termination |
+
+### Resource Limits
+| Container | CPU Request | CPU Limit | Memory Request | Memory Limit |
+| :-: | :-: | :-: | :-: | :-: |
+| noderag | 250m | 500m | 512Mi | 1Gi |
+| opensearch | 500m | 1000m | 1Gi | 2Gi |
+
+### Probes
+Both liveness and readiness probes call `GET /health`
+- Liveness: 30s initial delay, 15s period, restarts after 3 failures
+- Readiness: 30s initial delay, 10s period, removes from traffic after 5 failures

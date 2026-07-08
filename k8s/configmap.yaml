@@ -3,6 +3,7 @@ kind: ConfigMap
 metadata:
   name: noderag-config
 data:
+  APP_NAME: "NodeRAG"
   OPENSEARCH_URL: "http://opensearch-service:9200"
   OPENSEARCH_INDEX_NAME: "noderag_vectors"
   EMBEDDINGS_MODEL: "text-embedding-3-small"
