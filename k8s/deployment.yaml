@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: noderag
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: noderag
+  template:
+    metadata:
+      labels:
+        app: noderag
+    spec:
+      containers:
+        - name: noderag
+          image: noderag:prod
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: noderag-config
+            - secretRef:
+                name: noderag-secrets
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 5

@@ -32,7 +32,7 @@ RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy install Python packages from builder stage
+# Copy installed Python packages from builder stage
 # This avoids re-running pip install in the final image
 COPY --from=backend-builder /usr/local/lib/python3.11/site-packages \
         /usr/local/lib/python3.11/site-packages

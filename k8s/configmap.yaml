@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: noderag-config
+data:
+  OPENSEARCH_URL: "http://opensearch-service:9200"
+  OPENSEARCH_INDEX_NAME: "noderag_vectors"
+  EMBEDDINGS_MODEL: "text-embedding-3-small"
+  LLM_MODEL_NAME: "gpt-5.4-nano"
+  ENVIRONMENT: "production"
+  MAX_FILE_SIZE_MB: "10"
+  ALLOWED_FILE_TYPES: "pdf,txt,docx"
+
