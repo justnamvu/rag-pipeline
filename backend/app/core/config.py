@@ -2,10 +2,10 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    app_name: str = "NodeRAG"
+    app_name: str = "RAG"
     environment: str = "development"
     opensearch_url: str
-    opensearch_index_name: str = "noderag_vectors"
+    opensearch_index_name: str = "rag_vectors"
     embeddings_api_key: str = ""
     embeddings_model: str = "text-embedding-3-small"
     llm_api_key: str = ""

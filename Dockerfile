@@ -17,7 +17,7 @@ FROM python:3.11-slim AS backend-builder
 
 WORKDIR /build
 
-COPY backend/app/requirements.txt .
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Stage 3: Production runtime

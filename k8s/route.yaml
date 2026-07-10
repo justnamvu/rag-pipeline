@@ -1,11 +1,11 @@
 apiVersion: route.openshift.io/v1
 kind: Route
 metaData:
-  name: noderag-route
+  name: rag-route
 spec:
   to:
     kind: Service
-    name: noderag-service
+    name: rag-service
   port:
     targetPort: 8000
   tls:

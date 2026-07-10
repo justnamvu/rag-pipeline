@@ -1,27 +1,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: noderag
+  name: rag
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: noderag
+      app: rag
   template:
     metadata:
       labels:
-        app: noderag
+        app: rag
     spec:
       containers:
-        - name: noderag
-          image: noderag:prod
+        - name: rag
+          image: rag:prod
           ports:
             - containerPort: 8000
           envFrom:
             - configMapRef:
-                name: noderag-config
+                name: rag-config
             - secretRef:
-                name: noderag-secrets
+                name: rag-secrets
           resources:
             requests:
               memory: "512Mi"

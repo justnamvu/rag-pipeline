@@ -23,13 +23,13 @@ down:
 prod:
 	docker-compose up opensearch opensearch-dashboards -d
 	@echo "Waiting for OpenSearch..."
-	@until docker exec noderag-opensearch-1 curl -s http://localhost:9200 > /dev/null 2>&1; do \
+	@until docker exec rag_pipeline-opensearch-1 curl -s http://localhost:9200 > /dev/null 2>&1; do \
 		echo "  not ready yet, retrying in 5s..."; \
 		sleep 5; \
 	done
 	@echo "OpenSearch is ready."
 	docker run --rm \
-		--network noderag_default \
+		--network rag_pipeline_default \
 		-p 8000:8000 \
 		-e OPENSEARCH_URL=http://opensearch:9200 \
 		-e EMBEDDINGS_API_KEY=$(shell grep EMBEDDINGS_API_KEY .env | cut -d '=' -f2) \
@@ -37,4 +37,4 @@ prod:
 		-e LLM_API_KEY=$(shell grep LLM_API_KEY .env | cut -d '=' -f2) \
 		-e LLM_MODEL_NAME=$(shell grep LLM_MODEL_NAME .env | cut -d '=' -f2) \
 		-e OPENSEARCH_INDEX_NAME=$(shell grep OPENSEARCH_INDEX_NAME .env | cut -d '=' -f2) \
-		noderag:prod
+		rag:prod

@@ -1,1 +1,1 @@
-# NodeRAG
+# RAG

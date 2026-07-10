@@ -1,7 +1,7 @@
-# NodeRAG Architecture
+# RAG Architecture
 
 ## Overview
-- NodeRAG is a Retrieval-Augmented Generation (RAG) system that enables users to upload documents and query them through a conversational AI interface. Rather than relying on an LLM’s pre-trained knowledge, the system grounds every response strictly in the content of the uploaded documents.
+- RAG (Retrieval-Augmented Generation) is a system that enables users to upload documents and query them through a conversational AI interface. Rather than relying on an LLM’s pre-trained knowledge, the system grounds every response strictly in the content of the uploaded documents.
 - Incoming documents are parsed, cleaned, and split into chunks by the Ingestion Service, which then converts them into vector embeddings and stores them alongside their metadata in a Vector Store. At query time, the user’s question is similarly vectorised and used to retrieve the most semantically relevant chunks via cosine similarity search. Those chunks are injected into a structured prompt and passed to an LLM, which produces a response grounded entirely in the retrieved context.
 - All client interactions flow through a single FastAPI-based API Gateway, which handles routing and validation across both the upload and query pipelines.
 
@@ -48,7 +48,7 @@ Output: A list of chunk dictionaries ready to be passed to the Embeddings API
 - Dimension: 1536
 
 ### OpenSearch Index
-- Index name: 'noderag_vectors'
+- Index name: 'rag_vectors'
 - Algorithm: HNSW (Hierachival Navigable Small World)
 - Similarity metric: cosine similarity
 - Engine: faiss
@@ -205,14 +205,14 @@ Two-panel layout matching ChatGPT/Claude conventions:
 | `configmap.yaml` | Non-sensitive environment variables |
 | `secret.yaml` | API keys (gitignored, use secret.example.yaml as template) |
 | `opensearch-deployment.yaml` | OpenSearch pod + internal Service |
-| `deployment.yaml` | NodeRAG pod with probes and resource limits |
-| `service.yaml` | Internal cluster endpoint for NodeRAG |
+| `deployment.yaml` | RAG pod with probes and resource limits |
+| `service.yaml` | Internal cluster endpoint for RAG |
 | `route.yaml` | Public HTTPS URL via OpenShift edge TLS termination |
 
 ### Resource Limits
 | Container | CPU Request | CPU Limit | Memory Request | Memory Limit |
 | :-: | :-: | :-: | :-: | :-: |
-| noderag | 250m | 500m | 512Mi | 1Gi |
+| rag | 250m | 500m | 512Mi | 1Gi |
 | opensearch | 500m | 1000m | 1Gi | 2Gi |
 
 ### Probes
