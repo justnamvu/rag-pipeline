@@ -14,30 +14,30 @@ eval_cases = [
     },
     {
         "question": "When could SpaceX's revenue hit $1 trillion?",
-        "exp_chunk_index": 1,
+        "exp_chunk_index": 0,
         "expected_filename": "sample.txt",
     },
     {
         "question": "Which professor has collected data on U.S. IPOs since 1960?",
-        "exp_chunk_index": 2,
+        "exp_chunk_index": 1,
         "expected_filename": "sample.txt",
     },
     {
         "question": "What has been the average one-year return for IPO stocks since 1980?",
-        "exp_chunk_index": 3,
+        "exp_chunk_index": 1,
         "expected_filename": "sample.txt",
     },
     {
         "question": "Do tech companies generally fare better than non-tech ones?",
-        "exp_chunk_index": 4,
+        "exp_chunk_index": 2,
         "expected_filename": "sample.txt",
     },
 ]
 
 def run_evaluation():
-    print(f"\n{"-"*50}")
+    print(f"\n{"-"*40}")
     print(f"Retrieval Evaluation - precision@3")
-    print(f"{"-"*50}")
+    print(f"{"-"*40}")
 
     results_table = []
     hits = 0

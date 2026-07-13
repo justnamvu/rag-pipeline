@@ -30,13 +30,17 @@
 ## Ingestion Pipeline
 The upload endpoint runs the following sequence on every file:
 
-1. **Validation:** file type (MIME) and size check against config values
-2. **Parsing:** file bytes dispatched to the correct parser via 'PARSER_MAP' :
+1. **Validation:** File type (MIME) and size check against config values
+2. **Parsing:** File bytes dispatched to the correct parser via 'PARSER_MAP' :
     - PDF → 'docling' (exports to markdown, preserving structure)
     - DOCX → 'python-docx' (extracts paragraphs, filters blank lines)
     - TXT → 'bytes.decode()' with UTF-8 / Latin-1 fallback
-3. **Cleaning:** soft hyphens, non-breaking spaces, special characters, excess whitespace removed via 'clean_text()'
-4. **Chunking:** sliding window split with 'chunk_size=500', 'overlap=50'. Each chunk carries 'doc_id', 'file_name', 'chunk_index', and 'char_count' as metadata.
+3. **Cleaning:** Soft hyphens, non-breaking spaces, special characters, excess whitespace removed via 'clean_text()'
+4. **Chunking:** 
+    - Recursive separator-hierarchy split (`["\n\n", "\n", ". ", " ", ""]`) with `chunk_size=1200`, `overlap=200`
+    - Pieces break on the coarsest available boundary (paragraph → line → sentence → word), falling back to a hard character cut only when no separator fits
+    - Overlap is applied by prepending the previous chunk's word-boundary-trimmed tail so a chunk may exceed `chunk_size` by up to `overlap` characters
+    - Each chunk carries `doc_id`, `filename`, `chunk_index`, and `char_count` as metadata 
 
 Output: A list of chunk dictionaries ready to be passed to the Embeddings API
 
@@ -49,12 +53,12 @@ Output: A list of chunk dictionaries ready to be passed to the Embeddings API
 
 ### OpenSearch Index
 - Index name: 'rag_vectors'
-- Algorithm: HNSW (Hierachival Navigable Small World)
+- Algorithm: HNSW (Hierarchical Navigable Small World)
 - Similarity metric: cosine similarity
 - Engine: faiss
 
 ### Storage
-Each chunk is stored as a seperate OpenSearch document with:
+Each chunk is stored as a separate OpenSearch document with:
 - `embedding` - the 1536-dim vector
 - `doc_id`, `filename`, `chunk_index` - for tracing back to source
 - `chunk_text`, `char_count` - the actual content and its size
@@ -64,28 +68,27 @@ Document ID format: `{doc_id}_{chunk_index}` - re-uploading a document overwrite
 ### Similarity Search
 `POST /api/v1/query` accepts `{"query": "...", "top_k": 5}`, embeds the query using the same model as ingestion, and runs a knn search against the index. Returns the top-K chunks ranked by cosine similarity score.
 
-### Baseline Chunk counts (fixture files)
+### Baseline Chunk Counts (fixture files)
 | File | Chunks stored |
 | :-: | :-: |
-| sample.txt | 7 |
-| sample.pdf | 7 |
-| sample.docx | 7 |
+| sample.txt | 5 |
+| sample.pdf | 5 |
+| sample.docx | 5 |
 
 ## Retrieval Evaluation (precision@3)
-
 Evaluated against `sample.txt` with 5 hand-crafted question/chunk pairs.
 
 | Question | Expected Chunk Index | Top Index Returned | Score | Hit |
 | :-: | :-: | :-: | :-: | :-: |
-| What is SpaceX's ticker symbol on Nasdaq... | 0 | 0 | 0.7620 | Yes |
-| When could SpaceX’s revenue hit $1 trill... | 1 | 1 | 0.7463 | Yes |
-| Which professor has collected data on U.... | 2 | 2 | 0.6546 | Yes |
-| What has been the average one-year retur... | 3 | 3 | 0.8407 | Yes |
-| Do tech companies generally fare better ... | 4 | 4 | 0.6981 | Yes |
+| What is SpaceX's ticker symbol on Nasdaq... | 0 | 0 | 0.8264 | Yes |
+| When could SpaceX’s revenue hit $1 trill... | 0 | 0 | 0.8292 | Yes |
+| Which professor has collected data on U.... | 1 | 1 | 0.7269 | Yes |
+| What has been the average one-year retur... | 1 | 1 | 0.8540 | Yes |
+| Do tech companies generally fare better ... | 2 | 2 | 0.7576 | Yes |
 
 Precision@3: X/5 = X%
 
-Chunk parameters: `chunk_size=500`, `overlap=50`
+Chunk parameters: `chunk_size=1200`, `overlap=200`
 
 ## LLM Service
 
@@ -96,13 +99,13 @@ Chunk parameters: `chunk_size=500`, `overlap=50`
 - Max completion tokens: 500
 
 ### System Prompt Design
-The system prompt enforces strict grounding with five rules:
+The system prompt enforces strict grounding with four rules:
 1. Answer only from provided context passages
 2. Return "I don't have enough information..." if context is insufficient
 3. Never infer or use outside knowledge
 4. Keep answers concise and factual
 
-### Hallucination provention test results
+### Hallucination prevention test results
 | Scenario | Expected Behavior | Result |
 | :-: | :-: | :-: |
 | Answerable from context | Direct answer with citation | Pass |
@@ -123,8 +126,8 @@ Response:
     "content_type": "application/pdf",
     "file_size_bytes": 84231,
     "char_count": 7420,
-    "chunk_count": 14,
-    "message": "Pipeline complete. 14 chunks stored in OpenSearch."
+    "chunk_count": 8,
+    "message": "Pipeline complete. 8 chunks stored in OpenSearch."
 }
 ```
 
@@ -147,11 +150,11 @@ Response:
             "filename": "sample.txt",
             "chunk_index": 0,
             "chunk_text": "Space Exploration Technologies (NASDAQ: SPCX), better known as SpaceX, had a successful IPO...",
-            "char_count": 487,
-            "score": 0.8124,
+            "char_count": 1105,
+            "score": 0.8124
         }
     ],
-    "source_count": 3
+    "source_count": 5
 }
 ```
 
@@ -159,7 +162,7 @@ Response:
 - Schema between FastAPI and Vector DB finalised before coding begins
 - Metadata stored alongside vector to enable filtered retrieval
 - LLM Service never receives raw documents - only pre-retrieved context
-- Query and chunk embeddings must come from the identical odel (text-embedding-3-small) - comparing vectors from different models would be meaningless
+- Query and chunk embeddings must come from the identical model (text-embedding-3-small) - comparing vectors from different models would be meaningless
 - `temperature=0` is non-negotiable for a RAG system: any temperature > 0 introduces randomness that can cause the model to drift from the provided context
 
 ## Frontend
@@ -172,7 +175,7 @@ Response:
 ### Structure
 frontend/src/
 - App.jsx - Two-pane shell, sidebar toggle, doc state
-- components/UploadPanel.jsx - Drag-and-drop upload, skelon, doc list
+- components/UploadPanel.jsx - Drag-and-drop upload, skeleton, doc list
 - components/ChatInterface.jsx - Message list, input bar, sources, retry
 
 ### Layout
@@ -182,7 +185,7 @@ Two-panel layout matching ChatGPT/Claude conventions:
 
 ### Key UI Decisions
 - Neutral gray/white palette - one accent color (blue-500) reserved for the Send button and active states only
-- User messages right-aligned (blue bubble), LLM messsages left-aligned (gray bubble)
+- User messages right-aligned (blue bubble), LLM messages left-aligned (gray bubble)
 - Sources collapsible beneath each LLM message - filename, chunk index, similarity score, and 3-line text preview
 - Thinking dots during query loading, spinner on send button, skeleton shimmer during upload
 - Error bubbles include a Retry button that resends the original query

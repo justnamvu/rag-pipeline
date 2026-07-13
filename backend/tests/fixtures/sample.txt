@@ -11,3 +11,15 @@ That number has fallen into negative territory in recent years. The average one-
 
 
 Tech companies tend to fare better than non-tech companies, though. The average three-year buy-and-hold return from their first closing price for tech stocks since 1980 only trails the market by 12.7 percentage points. If you look at tech IPOs with more than $100 million in sales and exclude companies that went public at the height of the dot-com bubble, you finally get some good news. Those issues produced average three-year returns of 53.1% from their first close, beating the market average by 13.7%. For reference, though, SpaceX stock is already up nearly 30% from its first-day close as of this writing, so there's still not that much upside left based on historical averages.
+
+
+SpaceX is far from average, so investors probably shouldn't expect it to behave like the average IPO. Unfortunately, a few other factors are working against the company.
+
+
+First is its valuation. The stock debuted with a price-to-sales ratio of about 92 and now trades for over 140 times sales. To justify that valuation, SpaceX will have to deliver out-of-this-world top-line growth. And valuation still matters for IPOs. The average IPO with a price-to-sales ratio above 40 produced three-year returns of just 3.1% from its first closing price, well below the average returns of lower-valued IPOs.
+
+
+The second factor is float. SpaceX issued only about 4% of the company to the public. That leaves a lot of shares locked up with early investors and insiders. That can create significant selling pressure on the stock as lockups expire and existing shareholders have the opportunity to liquidate their equity. The average market-adjusted three-year returns from the first close are far worse for companies with more than $100 million in revenue and issuing less than 10% of shares than for those issuing more than 10% of shares.
+
+
+There are clear explanations for why those IPOs (highly valued and limited float) underperform over the long run. SpaceX will have a much tougher time bucking those trends than it would the broader historical averages. SpaceX certainly defies the odds, but as an investor, I wouldn't put my money on it.
