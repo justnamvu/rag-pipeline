@@ -1,6 +1,6 @@
 apiVersion: route.openshift.io/v1
 kind: Route
-metaData:
+metadata:
   name: rag-route
 spec:
   to:

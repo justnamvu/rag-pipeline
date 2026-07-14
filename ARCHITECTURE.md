@@ -1,9 +1,12 @@
 # RAG Architecture
 
 ## Overview
-- RAG (Retrieval-Augmented Generation) is a system that enables users to upload documents and query them through a conversational AI interface. Rather than relying on an LLM’s pre-trained knowledge, the system grounds every response strictly in the content of the uploaded documents.
-- Incoming documents are parsed, cleaned, and split into chunks by the Ingestion Service, which then converts them into vector embeddings and stores them alongside their metadata in a Vector Store. At query time, the user’s question is similarly vectorised and used to retrieve the most semantically relevant chunks via cosine similarity search. Those chunks are injected into a structured prompt and passed to an LLM, which produces a response grounded entirely in the retrieved context.
-- All client interactions flow through a single FastAPI-based API Gateway, which handles routing and validation across both the upload and query pipelines.
+- RAG (Retrieval-Augmented Generation) is a system that enables users to upload documents and query them through a conversational AI interface
+- Rather than relying on an LLM’s pre-trained knowledge, the system grounds every response strictly in the content of the uploaded documents
+- Incoming documents are parsed, cleaned, and split into chunks by the Ingestion Service, which then converts them into vector embeddings and stores them alongside their metadata in a Vector Store
+- At query time, the user’s question is similarly vectorised and used to retrieve the most semantically relevant chunks via cosine similarity search
+- Those chunks are injected into a structured prompt and passed to an LLM, which produces a response grounded entirely in the retrieved context
+- All client interactions flow through a single FastAPI-based API Gateway, which handles routing and validation across both the upload and query pipelines
 
 ## Components
 1. **API Gateway:**
@@ -12,7 +15,7 @@
     - Nothing reaches the backend without passing through it first
 2. **Ingestion Service:**
     - Receive raw docs, parse them into plain text, and split that text into overlapping chunks suitable for embedding
-    - Handle all the messy pre-processing work: clean special characters, normalise whitespace, and produce a clean array of text chunks as output
+    - Handle all the messy pre-processing work: Clean special characters, normalise whitespace, and produce a clean array of text chunks as output
     - Downstream services never touch raw files and only receive what the ingestion service has prepared
 3. **Vector Store:**
     - The database layer that persists vector embeddings alongside their metadata (filename, chunk index, etc.)
@@ -20,8 +23,8 @@
     - Everything ingested lives here until explicitly deleted
 4. **LLM Service:**
     - Wrap the language model 
-    - Take a user query + the retrieved context chunks and produce a grounded natural-language answer
-    - Enforce the strict prompting rules that prevent hallucination: if the answer isn’t in the provided context, it says no
+    - Take a user query and the retrieved context chunks and produce a grounded natural-language answer
+    - Enforce the strict prompting rules that prevent hallucination: If the answer isn’t in the provided context, it says no
     - The only component that generates text, whereas every other component moves or transforms data
 
 ## Data Flow Diagram
@@ -31,11 +34,11 @@
 The upload endpoint runs the following sequence on every file:
 
 1. **Validation:** File type (MIME) and size check against config values
-2. **Parsing:** File bytes dispatched to the correct parser via 'PARSER_MAP' :
+2. **Parsing:** File bytes dispatched to the correct parser via 'PARSER_MAP':
     - PDF → 'docling' (exports to markdown, preserving structure)
     - DOCX → 'python-docx' (extracts paragraphs, filters blank lines)
     - TXT → 'bytes.decode()' with UTF-8 / Latin-1 fallback
-3. **Cleaning:** Soft hyphens, non-breaking spaces, special characters, excess whitespace removed via 'clean_text()'
+3. **Cleaning:** Soft hyphens, non-breaking spaces, special characters, excess whitespace removed via `clean_text()`
 4. **Chunking:** 
     - Recursive separator-hierarchy split (`["\n\n", "\n", ". ", " ", ""]`) with `chunk_size=1200`, `overlap=200`
     - Pieces break on the coarsest available boundary (paragraph → line → sentence → word), falling back to a hard character cut only when no separator fits
@@ -63,7 +66,7 @@ Each chunk is stored as a separate OpenSearch document with:
 - `doc_id`, `filename`, `chunk_index` - for tracing back to source
 - `chunk_text`, `char_count` - the actual content and its size
 
-Document ID format: `{doc_id}_{chunk_index}` - re-uploading a document overwrites its previous chunks rather than duplicating them.
+Document ID format: `{doc_id}_{chunk_index}` - re-uploading a document overwrites its previous chunks rather than duplicating them
 
 ### Similarity Search
 `POST /api/v1/query` accepts `{"query": "...", "top_k": 5}`, embeds the query using the same model as ingestion, and runs a knn search against the index. Returns the top-K chunks ranked by cosine similarity score.
@@ -105,7 +108,7 @@ The system prompt enforces strict grounding with four rules:
 3. Never infer or use outside knowledge
 4. Keep answers concise and factual
 
-### Hallucination prevention test results
+### Hallucination Prevention Test Results
 | Scenario | Expected Behavior | Result |
 | :-: | :-: | :-: |
 | Answerable from context | Direct answer with citation | Pass |
@@ -117,7 +120,7 @@ The system prompt enforces strict grounding with four rules:
 ## Current API Contracts
 
 ### POST /api/v1/upload
-Request: `multipart/form-data` with a `file` field.
+Request: `multipart/form-data` with a `file` field
 Response:
 ```json
 {
@@ -162,8 +165,8 @@ Response:
 - Schema between FastAPI and Vector DB finalised before coding begins
 - Metadata stored alongside vector to enable filtered retrieval
 - LLM Service never receives raw documents - only pre-retrieved context
-- Query and chunk embeddings must come from the identical model (text-embedding-3-small) - comparing vectors from different models would be meaningless
-- `temperature=0` is non-negotiable for a RAG system: any temperature > 0 introduces randomness that can cause the model to drift from the provided context
+- Query and chunk embeddings must come from the identical model ('text-embedding-3-small') - comparing vectors from different models would be meaningless
+- `temperature=0` is non-negotiable for a RAG system: Any temperature > 0 introduces randomness that can cause the model to drift from the provided context
 
 ## Frontend
 
@@ -180,13 +183,13 @@ frontend/src/
 
 ### Layout
 Two-panel layout matching ChatGPT/Claude conventions:
-- Left sidebar (w-72, collapsible) - document upload and list
-- Right main panel (flex-1) - chat interface with fixed bottom input bar
+- Left sidebar (w-72, collapsible): Document upload and list
+- Right main panel (flex-1): Chat interface with fixed bottom input bar
 
 ### Key UI Decisions
-- Neutral gray/white palette - one accent color (blue-500) reserved for the Send button and active states only
+- Neutral gray/white palette: One accent color (blue-500) reserved for the Send button and active states only
 - User messages right-aligned (blue bubble), LLM messages left-aligned (gray bubble)
-- Sources collapsible beneath each LLM message - filename, chunk index, similarity score, and 3-line text preview
+- Sources collapsible beneath each LLM message (filename, chunk index, similarity score, and 3-line text preview)
 - Thinking dots during query loading, spinner on send button, skeleton shimmer during upload
 - Error bubbles include a Retry button that resends the original query
 - Sidebar slides closed via hamburger toggle for narrow viewports
@@ -198,7 +201,7 @@ Two-panel layout matching ChatGPT/Claude conventions:
 
 ### Container
 - Base image: `python:3.11-slim`
-- Build: three-stage Dockerfile (frontend-builder, backend-builder, runtime)
+- Build: Three-stage Dockerfile (frontend-builder, backend-builder, runtime)
 - Frontend served via FastAPI `StaticFiles` at `/`
 - API routes mounted before static files to avoid interception
 
@@ -219,6 +222,6 @@ Two-panel layout matching ChatGPT/Claude conventions:
 | opensearch | 500m | 1000m | 1Gi | 2Gi |
 
 ### Probes
-Both liveness and readiness probes call `GET /health`
+Both liveness and readiness probes call `GET /health`:
 - Liveness: 30s initial delay, 15s period, restarts after 3 failures
 - Readiness: 30s initial delay, 10s period, removes from traffic after 5 failures
