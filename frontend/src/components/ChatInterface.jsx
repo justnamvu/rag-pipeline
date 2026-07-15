@@ -121,9 +121,6 @@ export default function ChatInterface({ hasDocuments }) {
               {loading ? <Spinner /> : <ArrowUpIcon />}
             </button>
           </div>
-          <p className="text-xs text-gray-400 mt-2 text-center">
-            Answers are grounded in your uploaded documents
-          </p>
         </div>
       </div>
     </div>
