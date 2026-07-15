@@ -89,7 +89,7 @@ Evaluated against `sample.txt` with 5 hand-crafted question/chunk pairs.
 | What has been the average one-year retur... | 1 | 1 | 0.8540 | Yes |
 | Do tech companies generally fare better ... | 2 | 2 | 0.7576 | Yes |
 
-Precision@3: X/5 = X%
+Precision@3: 5/5 = 100%
 
 Chunk parameters: `chunk_size=1200`, `overlap=200`
 

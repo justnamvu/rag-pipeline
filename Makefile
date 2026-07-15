@@ -37,4 +37,4 @@ prod:
 		-e LLM_API_KEY=$(shell grep LLM_API_KEY .env | cut -d '=' -f2) \
 		-e LLM_MODEL_NAME=$(shell grep LLM_MODEL_NAME .env | cut -d '=' -f2) \
 		-e OPENSEARCH_INDEX_NAME=$(shell grep OPENSEARCH_INDEX_NAME .env | cut -d '=' -f2) \
-		rag:prod
+		rag_pipeline:prod
