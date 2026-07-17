@@ -1,7 +1,9 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
     app_name: str = "RAG"
     environment: str = "development"
     opensearch_url: str
@@ -12,10 +14,6 @@ class Settings(BaseSettings):
     llm_model_name: str = "gpt-5.4-nano"
     max_file_size_mb: int = 10
     allowed_file_types: str = "pdf,txt,docx"
-
-    class Config:
-        env_file = ".env"
-        extra = "ignore"
 
 
 settings = Settings()

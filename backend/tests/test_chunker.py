@@ -3,7 +3,7 @@ import pytest
 from app.services.parser import parse_document
 from app.services.cleaner import clean_text
 from app.services.chunker import chunk_text
-from conftest import SAMPLE_FILES
+from conftest import SAMPLE_FILE_ARGS, SAMPLE_IDS
 
 CHUNK_SIZE = 1200
 OVERLAP = 200
@@ -75,9 +75,9 @@ def test_metadata_shape():
     assert chunk["char_count"] == len(chunk["chunk_text"])
 
 
-@pytest.fixture(params=SAMPLE_FILES)
+@pytest.fixture(params=SAMPLE_FILE_ARGS, ids=SAMPLE_IDS)
 def real_chunks(request):
-    path, content_type = request.param.values
+    path, content_type = request.param
     cleaned = clean_text(parse_document(path.read_bytes(), content_type))
     return chunk_text(cleaned, DOC_ID, path.name, CHUNK_SIZE, OVERLAP), cleaned
 

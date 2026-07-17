@@ -1,6 +1,5 @@
 import os
 import sys
-import time
 from pathlib import Path
 
 import pytest
@@ -13,10 +12,18 @@ TXT = "text/plain"
 PDF = "application/pdf"
 DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
+# Plain tuples (for fixture params, which don't unpack pytest.param)
+SAMPLE_FILE_ARGS = [
+    (FIXTURES / "sample.txt", TXT),
+    (FIXTURES / "sample.pdf", PDF),
+    (FIXTURES / "sample.docx", DOCX),
+]
+SAMPLE_IDS = ["txt", "pdf", "docx"]
+
+# Wrapped (for @pytest.mark.parametrize, which does unpack)
 SAMPLE_FILES = [
-    pytest.param(FIXTURES / "sample.txt", TXT, id="txt"),
-    pytest.param(FIXTURES / "sample.pdf", PDF, id="pdf"),
-    pytest.param(FIXTURES / "sample.docx", DOCX, id="docx"),
+    pytest.param(path, ctype, id=file_id)
+    for (path, ctype), file_id in zip(SAMPLE_FILE_ARGS, SAMPLE_IDS)
 ]
 
 
