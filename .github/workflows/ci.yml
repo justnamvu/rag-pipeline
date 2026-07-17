@@ -33,6 +33,11 @@ jobs:
       - name: Format check (black)
         run: black --check backend/app/
 
+      - name: Unit tests (pytest)
+        # Integration tests need a live OpenSearch and a real OpenAI key
+        # so CI runs only the pure-function suite: parser, cleaner, chunker
+        run: pytest -m "not integration"
+
   frontend-ci:
     name: Frontend CI
     runs-on: ubuntu-latest

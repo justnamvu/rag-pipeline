@@ -38,3 +38,9 @@ prod:
 		-e LLM_MODEL_NAME=$(shell grep LLM_MODEL_NAME .env | cut -d '=' -f2) \
 		-e OPENSEARCH_INDEX_NAME=$(shell grep OPENSEARCH_INDEX_NAME .env | cut -d '=' -f2) \
 		rag-pipeline:prod
+
+test:
+	pytest
+
+test-unit:
+	pytest -m "not integration"

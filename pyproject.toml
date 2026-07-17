@@ -8,3 +8,12 @@ exclude = '''
     | .git
 )/
 '''
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+
+pythonpath = ["backend", "backend/tests"]
+markers = [
+    "integration: need a live OpenSearch and a real OpenAI key (deselect with -m 'not integration')",
+]
+addopts = "-v --strict-markers"

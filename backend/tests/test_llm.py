@@ -1,17 +1,19 @@
-import sys
-import os
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+import pytest
+from fastapi import HTTPException
 
 from app.services.llm import generate_answer
 
-mock_chunks = [
+pytestmark = pytest.mark.integration
+
+REFUSAL = "enough information"
+
+MOCK_CHUNKS = [
     {
         "chunk_index": 0,
         "doc_id": "test-doc-001",
         "filename": "sample.txt",
         "chunk_text": "Professor Jay Ritter has collected data on U.S. IPOs since 1960.",
-        "char_count": 64, 
+        "char_count": 64,
     },
     {
         "chunk_index": 1,
@@ -22,54 +24,61 @@ mock_chunks = [
     },
 ]
 
-def test_answerable():
-    print("\n--- Test 1: Answerable from context ---")
-    answer = generate_answer(
-        query="When can SpaceX's revenue hit $1 trillion?",
-        context_chunks=mock_chunks,
-    )
-    print(f"Answer: {answer}")
-    print(f"Pass: {"enough information" not in answer.lower() and len(answer) > 0}")
 
-def test_partial():
-    print("\n--- Test 2: Partially answerable")
+def test_answers_when_context_is_sufficient():
+    answer = generate_answer(
+        query="When could SpaceX's revenue hit $1 trillion?",
+        context_chunks=MOCK_CHUNKS,
+    )
+
+    assert len(answer) > 0
+    assert REFUSAL not in answer.lower(), (
+        f"refused a question the context answers: {answer}"
+    )
+    assert "2030" in answer
+
+
+def test_does_not_fabricate_beyond_context():
     answer = generate_answer(
         query="What is SpaceX and what does it do?",
-        context_chunks=mock_chunks,
+        context_chunks=MOCK_CHUNKS,
     )
-    print(f"Answer: {answer}")
-    fabricated = any(
-        word in answer.lower()
-        for word in ["Starlink", "AI", "Spacecraft", "Rocket", "NASA"]
-    )
-    print(f"Pass (no fabricated information): {not fabricated}")
+    fabricated = [
+        word
+        for word in ["starlink", "spacecraft", "rocket", "nasa", "satellite"]
+        if word in answer.lower()
+    ]
 
-def test_out_of_context():
-    print("\n--- Test 3: Out of context")
+    assert not fabricated, f"fabricated details not in context: {fabricated}"
+
+
+def test_refuses_out_of_context_question():
     answer = generate_answer(
         query="What is the GDP of Vietnam in 2025?",
-        context_chunks=mock_chunks,
+        context_chunks=MOCK_CHUNKS,
     )
-    print(f"Answer: {answer}")
-    print(f"Pass (refuse to hallucinate): {"enough information" in answer.lower()}")
 
-def test_empty_chunks():
-    print("\n--- Test 4: Empty chunks ---")
-    answer = generate_answer(query="What happened?",context_chunks=[])
-    print(f"Answer: {answer}")
-    print(f"Pass (faillback triggered): {'enough information' in answer.lower()}")
+    assert REFUSAL in answer.lower(), f"hallucinated an answer: {answer}"
 
-def test_empty_query():
-    print("\n--- Test 5: Empty query ---")
-    try:
-        generate_answer(query= "   ", context_chunks=mock_chunks)
-        print("Fail (should have raised HTTPException)")
-    except Exception as e:
-        print(f"Correctly raised: {e}")
-        print("Pass")
 
-test_answerable()
-test_partial()
-test_out_of_context()
-test_empty_chunks()
-test_empty_query()
+def test_empty_chunks_returns_fallback():
+    answer = generate_answer(query="What happened?", context_chunks=[])
+
+    assert REFUSAL in answer.lower()
+
+
+@pytest.mark.parametrize("query", ["", "   ", "\n\t"])
+def test_empty_query_raises_400(query):
+    with pytest.raises(HTTPException) as exc:
+        generate_answer(query=query, context_chunks=MOCK_CHUNKS)
+
+    assert exc.value.status_code == 400
+
+
+def test_deterministic_at_temperature_zero():
+    kwargs = {
+        "query": "Which professor collected IPO data?",
+        "context_chunks": MOCK_CHUNKS,
+    }
+
+    assert generate_answer(**kwargs) == generate_answer(**kwargs)

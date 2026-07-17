@@ -1,22 +1,41 @@
-import sys
-import os
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+import pytest
+from fastapi import HTTPException
 
 from app.services.parser import parse_document
+from conftest import SAMPLE_FILES, FIXTURES, TXT
 
-def test_file(path: str, content_type: str):
-    print(f"\n--- Test: Parse {path} ---")
-    with open(path, "rb") as f:
-        contents = f.read()
-    try:
-        text = parse_document(contents, content_type)
-        print(f"Status: Ok")
-        print(f"Characters extracted: {len(text)}")
-        print(f"First 200 chars: {text[:200]}")
-    except Exception as e:
-        print(f"Status: Failed — {e}")
+@pytest.mark.parametrize("path,content_type", SAMPLE_FILES)
+def test_parses_without_error(path, content_type):
+    text = parse_document(path.read_bytes(), content_type)
 
-test_file("backend/tests/fixtures/sample.txt", "text/plain")
-test_file("backend/tests/fixtures/sample.pdf", "application/pdf")
-test_file("backend/tests/fixtures/sample.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+    assert isinstance(text, str)
+    assert len(text) > 0, f"{path.name} produced no text"
+    assert text.strip(), f"{path.name} produced only whitespace"
+
+@pytest.mark.parametrize("path,content_type", SAMPLE_FILES)
+def test_extracts_known_content(path, content_type):
+    text = parse_document(path.read_bytes(), content_type)
+    assert "SpaceX" in text
+
+def test_unsupported_content_type_raises():
+    with pytest.raises(HTTPException) as exc:
+        parse_document(b"fake image bytes", "image/jpeg")
+
+    assert exc.value.status_code == 400
+    assert "image/jpeg" in exc.value.detail
+
+def test_corrupt_pdf_raises_422():
+    with pytest.raises(HTTPException) as exc:
+        parse_document(b"not a real pdf at all", "application/pdf")
+
+    assert exc.value.status_code == 422
+
+def test_latin1_fallback():
+    text = parse_document(b"caf\xe9 society", TXT)
+    assert "caf" in text
+
+def test_txt_roundtrip_preserves_length():
+    path = FIXTURES / "sample.txt"
+    raw = path.read_bytes()
+    text = parse_document(raw, TXT)
+    assert len(text) == len(raw.decode("utf-8"))

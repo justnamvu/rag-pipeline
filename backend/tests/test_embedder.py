@@ -1,65 +1,88 @@
-import sys
-import os
+import copy
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+import pytest
 
 from app.services.embedder import embed_single, embed_chunks
 
-def test_embed_single():
-    print("\n--- Test 1: Embed single string ---")
-    text = "CEO Elon Musk even suggested SpaceX's revenue could hit $1 trillion by 2030"
-    vector = embed_single(text)
+pytestmark = pytest.mark.integration
 
-    print(f"Vector dimensions: {len(vector)} (expected 1536)")
-    print(f"Dimensions match: {len(vector) == 1536}")
+DIMENSIONS = 1536
 
-    all_floats = all(isinstance(v, float) for v in vector)
-    print(f"All values are floats: {all_floats}")
+MOCK_CHUNKS = [
+    {
+        "chunk_index": 0,
+        "doc_id": "test-doc-001",
+        "filename": "sample.txt",
+        "chunk_text": "Professor Jay Ritter has collected data on U.S. IPOs since 1960.",
+        "char_count": 64,
+    },
+    {
+        "chunk_index": 1,
+        "doc_id": "test-doc-001",
+        "filename": "sample.txt",
+        "chunk_text": "CEO Elon Musk even suggested SpaceX's revenue could hit $1 trillion by 2030",
+        "char_count": 75,
+    },
+]
 
-    in_range = all(-1.0 <= v <= 1.0 for v in vector)
-    print(f"All values are in [-1, 1]: {in_range}")
 
-    print(f"Fist 5 values: {[round(v, 6) for v in vector[:5]]}")
+@pytest.fixture
+def vector():
+    return embed_single(
+        "CEO Elon Musk even suggested SpaceX's revenue could hit $1 trillion by 2030"
+    )
 
-def test_embed_chunks():
-    print("\n--- Test 2: Embed chunks ---")
-    mock_chunks = [
-        {
-           "chunk_index": 0,
-           "doc_id": "test-doc-001",
-           "filename": "sample.txt",
-           "chunk_text": "Professor Jay Ritter has collected data on U.S. IPOs since 1960.",
-           "char_count": 64, 
-        },
-        {
-            "chunk_index": 1,
-            "doc_id": "test-doc-001",
-            "filename": "sample.txt",
-            "chunk_text": "CEO Elon Musk even suggested SpaceX's revenue could hit $1 trillion by 2030",
-            "char_count": 75,
-        },
-    ]
-    
-    embedded = embed_chunks(mock_chunks)
 
-    print(f"Input chunks: {len(mock_chunks)}")
-    print(f"Output chunks: {len(embedded)}")
+def test_single_vector_dimensions(vector):
+    assert len(vector) == DIMENSIONS
 
+
+def test_single_vector_values_are_floats(vector):
+    assert all(isinstance(v, float) for v in vector)
+
+
+def test_single_vector_values_in_range(vector):
+    # text-embedding-3-small returns unit vectors 
+    # Anything outside [-1, 1] means the response is not a normalised embedding
+    assert all(-1.0 <= v <= 1.0 for v in vector)
+
+
+def test_single_vector_is_not_all_zeros(vector):
+    assert any(v != 0.0 for v in vector)
+
+
+def test_embed_chunks_attaches_vectors():
+    embedded = embed_chunks(copy.deepcopy(MOCK_CHUNKS))
+
+    assert len(embedded) == len(MOCK_CHUNKS)
     for chunk in embedded:
-        has_embedding = "embedding" in chunk
-        correct_dims = len(chunk["embedding"]) == 1536
-        print(f"Chunk {chunk["chunk_index"]}: "
-              f"has_embedding = {has_embedding}, "
-              f"correct_dims = {correct_dims}")
-    
-    original_untouched = "embedding" not in mock_chunks[0]
-    print(f"Original chunks untouched: {original_untouched}")
+        assert "embedding" in chunk
+        assert len(chunk["embedding"]) == DIMENSIONS
 
-def test_empty_input():
-    print("\n--- Test 3: Empty input ---")
-    result = embed_chunks([])
-    print(f"Result for empty list: {result} (expected [])")
 
-test_embed_single()
-test_embed_chunks()
-test_empty_input()
+def test_embed_chunks_preserves_metadata():
+    embedded = embed_chunks(copy.deepcopy(MOCK_CHUNKS))
+
+    for original, result in zip(MOCK_CHUNKS, embedded):
+        for key in original:
+            assert result[key] == original[key]
+
+
+def test_embed_chunks_does_not_mutate_input():
+    chunks = copy.deepcopy(MOCK_CHUNKS)
+    embed_chunks(chunks)
+
+    assert all("embedding" not in c for c in chunks), (
+        "embed_chunks mutated its input — the dict(chunk) copy is missing"
+    )
+
+
+def test_embed_chunks_empty_input():
+    assert embed_chunks([]) == []
+
+
+def test_different_text_produces_different_vectors():
+    a = embed_single("SpaceX launched a rocket")
+    b = embed_single("The recipe calls for three eggs")
+
+    assert a != b

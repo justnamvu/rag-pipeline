@@ -1,32 +1,53 @@
-import sys
-import os
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+import pytest
 
 from app.services.vector_store import search_chunks
+from conftest import FIXTURES, TXT
 
-def test_search_basic():
-    print("\n--- Test 1: Basic search ---")
-    results = search_chunks("What is SpaceX's ticker symbol on Nasdaq?", top_k=3)
+pytestmark = pytest.mark.integration
 
-    print(f"Number of results: {len(results)}")
-    for i, result in enumerate(results):
-        print(f"\nResult {i + 1} (score={result['score']:.4f}):")
-        print(f"filename: {result['filename']}")
-        print(f"chunk_index: {result['chunk_index']}")
-        print(f"chunk_text: {result['chunk_text'][:150]}")
+DOC_ID = "test-search-001"
 
-def test_search_empty():
-    print("\n--- Test 2: Search empty query ----")
-    results = search_chunks("", top_k=3)
-    print(f"Results for empty query: {len(results)} (expected 0)")
 
-def test_check_top_k():
-    print("\n--- Test 3: Check top_k limits ---")
+@pytest.fixture
+def sample_ingested(ingest):
+    return ingest(FIXTURES / "sample.txt", TXT, DOC_ID)
+
+
+def test_empty_query_returns_no_results():
+    assert search_chunks("", top_k=3) == []
+
+
+def test_whitespace_query_returns_no_results():
+    assert search_chunks("   ", top_k=3) == []
+
+
+def test_top_k_caps_result_count(sample_ingested):
     results = search_chunks("IPO", top_k=2)
-    print(f"Requested top_k=2, got {len(results)} results")
-    print(f"Within limit: {len(results) <= 2}")
+    assert len(results) <= 2
 
-test_search_basic()
-test_search_empty()
-test_check_top_k()
+
+def test_result_shape(sample_ingested):
+    results = search_chunks("What is SpaceX's ticker symbol on Nasdaq?", top_k=3)
+    assert len(results) > 0
+    for result in results:
+        assert set(result) == {
+            "doc_id",
+            "filename",
+            "chunk_index",
+            "chunk_text",
+            "char_count",
+            "score",
+        }
+        assert "embedding" not in result
+
+
+def test_results_are_sorted_by_score_desc(sample_ingested):
+    results = search_chunks("What is SpaceX's ticker symbol on Nasdaq?", top_k=3)
+    scores = [r["score"] for r in results]
+    assert scores == sorted(scores, reverse=True)
+
+
+def test_relevant_query_scores_higher_than_irrelevant(sample_ingested):
+    relevant = search_chunks("SpaceX IPO stock debut", top_k=1)
+    irrelevant = search_chunks("Vietnam's GDP in 2025", top_k=1)
+    assert relevant[0]["score"] > irrelevant[0]["score"]
