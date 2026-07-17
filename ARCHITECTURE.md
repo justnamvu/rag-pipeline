@@ -35,9 +35,8 @@ The upload endpoint runs the following sequence on every file:
 
 1. **Validation:** File type (MIME) and size check against config values
 2. **Parsing:** File bytes dispatched to the correct parser via 'PARSER_MAP':
-    - PDF → 'docling' (exports to markdown, preserving structure)
-    - DOCX → 'python-docx' (extracts paragraphs, filters blank lines)
-    - TXT → 'bytes.decode()' with UTF-8 / Latin-1 fallback
+    - PDF and DOCX → `docling` (exports to Markdown, preserving structure)
+    - TXT → `bytes.decode()` with UTF-8 / Latin-1 fallback
 3. **Cleaning:** Soft hyphens, non-breaking spaces, special characters, excess whitespace removed via `clean_text()`
 4. **Chunking:** 
     - Recursive separator-hierarchy split (`["\n\n", "\n", ". ", " ", ""]`) with `chunk_size=1200`, `overlap=200`
