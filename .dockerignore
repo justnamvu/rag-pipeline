@@ -1,0 +1,27 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+
+# Node
+node_modules/
+frontend/dist/
+
+# Git and CI
+.git/
+.github/
+
+# Environment and secrets
+.env
+.env.local
+k8s/secret.yaml
+
+# Local dev
+.vscode/
+.DS_Store
+
+# Docs and tests not needed in the image
+docs/
+backend/tests/

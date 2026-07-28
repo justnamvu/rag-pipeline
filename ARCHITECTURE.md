@@ -224,3 +224,11 @@ Two-panel layout matching ChatGPT/Claude conventions:
 Both liveness and readiness probes call `GET /health`:
 - Liveness: 30s initial delay, 15s period, restarts after 3 failures
 - Readiness: 30s initial delay, 10s period, removes from traffic after 5 failures
+
+### Build optimization
+- `.dockerignore` excludes `.venv`, `node_modules`, tests, and secrets
+  from the build context
+- GitHub Actions layer caching (`cache-from: type=gha`) reuses the
+  docling/torch dependency layers across CI runs
+- Multi-stage build discards Node.js and build tools from the runtime image; only compiled frontend assets and installed Python packages reach the final layer
+- Image size is dominated by docling's ML dependencies (torch); this is an accepted tradeoff for superior PDF and DOCX parsing quality
