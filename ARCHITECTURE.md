@@ -232,3 +232,21 @@ Both liveness and readiness probes call `GET /health`:
   docling/torch dependency layers across CI runs
 - Multi-stage build discards Node.js and build tools from the runtime image; only compiled frontend assets and installed Python packages reach the final layer
 - Image size is dominated by docling's ML dependencies (torch); this is an accepted tradeoff for superior PDF and DOCX parsing quality
+
+## Performance
+### Pipeline Stage Timings
+Measured on sample.txt (single query), local Docker stack:
+
+| Stage | Time | Bound by |
+| :-: | :-: | :-: |
+| parse | 0 ms | instant `contents.decode("utf-8")` |
+| clean | 0.2 ms | CPU |
+| chunk | 0 ms | CPU |
+| embed | 1862.8 ms | OpenAI API |
+| store | 89.8 | OpenSearch writes |
+| search | 912.7 ms | embed + OpenSearch query |
+| generate | 3049.3 ms | LLM completion |
+
+### Optimizations applied
+- Embedding batched into a single API call per document rather than one call per chunk; cuts ingestion time for multi-chunk documents
+- Time is dominated by external API calls to OpenAI (embed + search's query embed + generate), not by local processing; cleaning and chunking are negligible

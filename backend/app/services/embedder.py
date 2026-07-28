@@ -1,4 +1,3 @@
-import time
 import logging
 from typing import List
 
@@ -38,29 +37,27 @@ def embed_chunks(chunks: List[dict]) -> List[dict]:
     if not chunks:
         return []
 
-    logger.info(f"Embedding {len(chunks)} chunks...")
+    logger.info(f"Embedding {len(chunks)} chunks in one batch...")
+
+    client = get_openai_client()
+    texts = [chunk["chunk_text"] for chunk in chunks]
+
+    try:
+        response = client.embeddings.create(
+            input=texts,
+            model=settings.embeddings_model,
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to embed chunks: {str(e)}",
+        )
+
     embedded = []
-
-    for i, chunk in enumerate(chunks):
-        try:
-            vector = embed_single(chunk["chunk_text"])
-            embedded_chunk = dict(chunk)
-            embedded_chunk["embedding"] = vector
-            embedded.append(embedded_chunk)
-
-            logger.info(
-                f"Embedded chunk {i + 1}/{len(chunks)} "
-                f"({chunk['char_count']} chars)"
-            )
-
-            if i < len(chunks) - 1:
-                time.sleep(0.1)
-        except Exception as e:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to embed chunk {i} "
-                f"(doc_id={chunk['doc_id']}): {str(e)}",
-            )
+    for chunk, item in zip(chunks, response.data):
+        embedded_chunk = dict(chunk)
+        embedded_chunk["embedding"] = item.embedding
+        embedded.append(embedded_chunk)
 
     logger.info(f"Embedding complete. {len(embedded)} chunks embedded.")
     return embedded
