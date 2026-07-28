@@ -3,12 +3,13 @@ from docling.document_converter import DocumentConverter
 from docling.datamodel.base_models import DocumentStream
 from fastapi import HTTPException
 
+_converter = DocumentConverter()
+
 
 def parse_pdf(contents: bytes) -> str:
     try:
-        converter = DocumentConverter()
         source = DocumentStream(name="document.pdf", stream=io.BytesIO(contents))
-        result = converter.convert(source)
+        result = _converter.convert(source)
         return result.document.export_to_markdown()
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"Failed to parse PDF: {str(e)}")
@@ -16,9 +17,8 @@ def parse_pdf(contents: bytes) -> str:
 
 def parse_docx(contents: bytes) -> str:
     try:
-        converter = DocumentConverter()
         source = DocumentStream(name="document.docx", stream=io.BytesIO(contents))
-        result = converter.convert(source)
+        result = _converter.convert(source)
         return result.document.export_to_markdown()
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"Failed to parse DOCX: {str(e)}")

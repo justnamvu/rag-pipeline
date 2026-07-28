@@ -199,7 +199,7 @@ Two-panel layout matching ChatGPT/Claude conventions:
 ## Deployment
 
 ### Container
-- Base image: `python:3.11-slim`
+- Base image: `python:3.14-slim`
 - Build: Three-stage Dockerfile (frontend-builder, backend-builder, runtime)
 - Frontend served via FastAPI `StaticFiles` at `/`
 - API routes mounted before static files to avoid interception
