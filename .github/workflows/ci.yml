@@ -34,8 +34,6 @@ jobs:
         run: black --check backend/app/
 
       - name: Unit tests (pytest)
-        # Integration tests need a live OpenSearch and a real OpenAI key
-        # so CI runs only the pure-function suite: parser, cleaner, chunker
         env:
           OPENSEARCH_URL: http://localhost:9200
           OPENSEARCH_INDEX_NAME: rag_vectors
@@ -64,10 +62,62 @@ jobs:
         working-directory: frontend
         run: npm run build
 
+  integration:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    # Only on pushes to main since these tests cost OpenAI credits
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: backend-ci
+
+    services:
+      opensearch:
+        image: opensearchproject/opensearch:3.7.0
+        env:
+          discovery.type: single-node
+          DISABLE_SECURITY_PLUGIN: "true"
+          OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+        ports:
+          - 9200:9200
+        # GitHub waits for this healthcheck before starting the job steps
+        options: >-
+          --health-cmd "curl -s http://localhost:9200/_cluster/health || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 20
+          --health-start-period 40s
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r backend/requirements.txt
+
+      - name: Run integration tests
+        env:
+          # opensearch service is reachable at localhost from the runner
+          OPENSEARCH_URL: http://localhost:9200
+          OPENSEARCH_INDEX_NAME: rag_vectors
+          EMBEDDINGS_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          EMBEDDINGS_MODEL: text-embedding-3-small
+          LLM_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          LLM_MODEL_NAME: gpt-5.4-nano
+        run: |
+          # The index must exist before the tests store anything.
+          python -c "from app.services.index_manager import create_index; create_index()"
+          pytest -m integration
+
+
   docker:
     name: Build and push image
     runs-on: ubuntu-latest
-    needs: [backend-ci, frontend-ci]
+    needs: [backend-ci, frontend-ci, integration]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
       - uses: actions/checkout@v7
