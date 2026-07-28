@@ -110,7 +110,7 @@ jobs:
           LLM_MODEL_NAME: gpt-5.4-nano
         run: |
           # The index must exist before the tests store anything.
-          python -c "from app.services.index_manager import create_index; create_index()"
+          PYTHONPATH = backend python -c "from app.services.index_manager import create_index; create_index()"
           pytest -m integration
 
 
