@@ -109,8 +109,8 @@ jobs:
           LLM_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           LLM_MODEL_NAME: gpt-5.4-nano
         run: |
-          # The index must exist before the tests store anything.
-          PYTHONPATH = backend python -c "from app.services.index_manager import create_index; create_index()"
+          # create_index needs app on the path; pytest gets it from pyproject
+          PYTHONPATH=backend python -c "from app.services.index_manager import create_index; create_index()"
           pytest -m integration
 
 
