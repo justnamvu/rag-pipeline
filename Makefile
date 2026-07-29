@@ -1,4 +1,4 @@
-.PHONY: run format lint check build up down prod
+.PHONY: run format lint check build build-prod up down prod test test-unit
 
 run:
 	uvicorn app.main:app --reload
@@ -19,6 +19,9 @@ up:
 
 down:
 	docker-compose down
+
+build-prod:
+	docker build -t rag-pipeline:prod .
 
 prod:
 	docker-compose up opensearch opensearch-dashboards -d

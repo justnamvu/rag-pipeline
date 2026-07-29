@@ -1,14 +1,5 @@
 # RAG Pipeline Architecture
 
-## Overview
-
-- RAG (Retrieval-Augmented Generation) is a system that enables users to upload documents and query them through a conversational AI interface
-- Rather than relying on an LLM’s pre-trained knowledge, the system grounds every response strictly in the content of the uploaded documents
-- Incoming documents are parsed, cleaned, and split into chunks by the Ingestion Service, which then converts them into vector embeddings and stores them alongside their metadata in a Vector Store
-- At query time, the user’s question is similarly vectorized and used to retrieve the most semantically relevant chunks via cosine similarity search
-- Those chunks are injected into a structured prompt and passed to an LLM, which produces a response grounded entirely in the retrieved context
-- All client interactions flow through a single FastAPI-based API Gateway, which handles routing and validation across both the upload and query pipelines
-
 ## Components
 
 1. **API Gateway:**
