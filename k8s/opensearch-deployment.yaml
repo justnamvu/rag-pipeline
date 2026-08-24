@@ -12,6 +12,7 @@ spec:
       labels:
         app: opensearch
     spec:
+      serviceAccountName: opensearch-sa
       containers:
         - name: opensearch
           image: opensearchproject/opensearch:3.7.0
@@ -24,6 +25,20 @@ spec:
               value: "true"
             - name: OPENSEARCH_JAVA_OPTS
               value: "-Xms512m -Xmx512m"
+            - name: bootstrap.memory_lock
+              value: "false"
+            - name: bootstrap.system_call_filter
+              value: "false"
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+                - ALL
           resources:
             requests:
               memory: "1Gi"
